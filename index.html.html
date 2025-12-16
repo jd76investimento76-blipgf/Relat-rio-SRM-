@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AISAN → Relatório 2025</title>
+<style>
+  body{font-family:Arial;margin:10px;background:#f0f8ff;padding-bottom:120px;}
+  .logo-container{text-align:center;margin:20px 0 10px 0;}
+  .logo-container h2{color:#1e40af;font-size:32px;font-weight:bold;margin:0;letter-spacing:3px;}
+  .logo-container p{color:#2c3e50;font-size:17px;font-weight:bold;}
+  h1{text-align:center;color:#2c3e50;font-size:24px;margin:10px 0 30px;font-weight:bold;}
+
+  .cabecalho{background:white;padding:25px 20px;border:3px solid #3498db;border-radius:18px;
+    margin:0 12px 30px;box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+  .linha{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+    gap:15px 25px;margin:20px 0;font-size:17px;}
+  .item{display:flex;align-items:center;min-width:280px;flex:1;}
+  .label{font-weight:bold;color:#2c3e50;width:100px;flex-shrink:0;}
+  .campo{flex:1;min-height:34px;border-bottom:3px dotted #3498db;
+    padding:6px 8px;font-size:17px;}
+  .campo:empty::before{content:"digite aqui";color:#aaa;font-style:italic;}
+  .campo:focus::before{content:none;outline:none;}
+
+  table{width:96%;margin:10px auto;border-collapse:collapse;background:white;
+    font-size:13.5px;box-shadow:0 4px 15px rgba(0,0,0,0.1);border-radius:12px;overflow:hidden;}
+  th,td{border:1px solid #999;padding:10px;text-align:center;vertical-align:middle;}
+  th{background:#3498db;color:white;font-weight:bold;}
+  select{width:98%;padding:9px;border-radius:6px;font-size:15px;}
+  .btn{position:fixed;bottom:15px;left:5%;right:5%;padding:22px;font-size:24px;
+    background:#27ae60;color:white;border:none;border-radius:16px;font-weight:bold;
+    box-shadow:0 8px 25px rgba(0,0,0,0.3);z-index:999;}
+  .btn:disabled{background:#7f8c8d;}
+
+  /* ESTILO DOS CHECKBOXES */
+  .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+  }
+  .checkbox-item input { margin-right: 6px; transform: scale(1.2); }
+</style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="logo-container">
+  <h2>DSEI-AL/SE</h2>
+  <p>Distrito Sanitário Especial Indígena</p>
+</div>
+
+<h1>RELATÓRIO MENSAL – AISAN</h1>
+
+<div class="cabecalho">
+  <div class="linha">
+    <div class="item"><div class="label">Data:</div><div class="campo" contenteditable="true" id="data"></div></div>
+    <div class="item"><div class="label">Aldeia:</div><div class="campo" contenteditable="true" id="aldeia"></div></div>
+  </div>
+  <div class="linha">
+    <div class="item" style="flex:1 1 100%;"><div class="label">Município:</div><div class="campo" contenteditable="true" id="municipio"></div></div>
+  </div>
+  <div class="linha">
+    <div class="item"><div class="label">Estado:</div><div class="campo" contenteditable="true" id="estado"></div></div>
+    <div class="item"><div class="label">Polo Base:</div><div class="campo" contenteditable="true" id="polo"></div></div>
+  </div>
+  <div class="linha">
+    <div class="item" style="flex:1 1 100%;"><div class="label">AISAN:</div><div class="campo" contenteditable="true" id="aisan"></div></div>
+  </div>
+</div>
+
+<table id="tabela">
+  <thead><tr><th>ATIVIDADE</th><th>REALIZADA</th><th>QUANTIDADE / TIPO</th><th>JUSTIFICATIVA</th></tr></thead>
+  <tbody id="corpo"></tbody>
+</table>
+
+<button class="btn" id="botao" onclick="gerarOficialExato()">GERAR E ENVIAR (100% OFICIAL)</button>
+
+<script>
+// DATA AUTOMÁTICA
+const hoje = new Date();
+const dataBr = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+document.getElementById("data").innerText = dataBr;
+
+const atividades = [
+"Identificou lixo espalhado e/ou acumulado na aldeia?",
+"As lixeiras/contêineres estão em bom estado de uso?",
+"A comunidade está conseguindo separar o lixo reciclável?",
+"O lixo está sendo acondicionado em sacos plásticos?",
+"Houve queima de lixo na aldeia no último mês?",
+"Qual foi a destinação da maioria dos resíduos?",
+"Se forem outros, especificar a destinação",
+"Existem pontos de acúmulo de água parada e/ou condições para o desenvolvimento de vetores (mosquitos, ratos, baratas) transmissores de doença?",
+"Qual a destinação da maioria dos resíduos orgânicos?",
+"Identificou resíduos perigosos descartados incorretamente? (Pneus, Baterias, Embalagens de agrotóxicos, Óleos lubrificantes, Lâmpadas)",
+"Foi fornecido à aldeia ou ao AISAN material para o GRS?",
+"Quantidade de Rodas de conversa sobre resíduos sólidos no mês:",
+"Quantidade de Palestras sobre resíduos sólidos no mês:",
+"Quantidade de Oficinas sobre resíduos sólidos no mês:",
+"Quantidade de Atividade em escolas indígenas no mês:",
+"Quantidade de Atividade Diagnóstica (realização da caracterização com gravimetria) no mês:",
+"Quantidade de Mutirões de limpeza no mês:",
+"Foi feita atividade de Visita domiciliar no mês?",
+"Nº de casas visitadas:",
+"Quantidade de Campanhas de coleta (materiais recicláveis, logística reversa) no mês:",
+"Quantidade de Implantação de Aterros ou valas no mês:",
+"Temas abordados nas atividades do mês:",
+"NOME DO RESPONSÁVEL PELO PREENCHIMENTO DAS INFORMAÇÕES NESTA PLANILHA",
+"DATA DO PREENCHIMENTO DAS INFORMAÇÕES NESTA PLANILHA",
+"Insira, se desejado, o link de fotos, lista de presença, checklist, etc.",
+"Observações Adicionais (campo livre para comentários)",
+"Quais Equipamentos de Proteção Individual foram entregues no mês?",
+"Informa se houve ação de qualificação do AISAN no mês?",
+"Qual(is) tema(s) foi/foram abordado(s) na capacitação?",
+"Qual(is) tema(s) foi/foram abordado(s) na capacitação?",
+"Verificou as condições dos recipientes de água intradomiciliar (limpeza e condições físicas)?",
+"O AISAN fez troca de velas dos filtros, ou orientou o usuário sobre a troca nesse mês?",
+"O AISAN recebeu hipoclorito de sódio 2,5% da equipe do SESANI/DISANI?",
+"O AISAN distribuiu hipoclorito de sódio 2,5% e orientou a comunidade sobre o seu uso?",
+"Quantidade de Hipoclorito entregue à comunidade",
+"O AISAN realizou análise de cloro ou coleta para outras análises (quando aplicável)?",
+"Foi entregue insumos para o Tratamento de Água nesse mês?",
+"Foi realizada a retrolavagem em filtros pelo AISAN?",
+"Verificou as condições de limpeza da caixa d'água?",
+"Fez a inspeção do sistema de abastecimento de água?",
+"Em caso de necessidade de manutenção, comunicou ao SESANI sobre demanda?",
+"O AISAN orientou a comunidade sobre o descarte do lixo?",
+"O AISAN verificou a instalação/operação das valas para lixo, no mês?",
+"O AISAN organizou mutirões de limpeza na comunidade, no mês?",
+"O AISAN construiu/implantou/orientou a criação de composteiras?",
+"O AISAN fez limpeza do ponto de captação de água?",
+"O AISAN implantou sistema de coleta de pilhas e baterias?",
+"O AISAN participou de alguma atividade da UBSI neste mês?",
+"O AISAN realizou reuniões, palestras ou campanhas sobre prevenção de doenças relacionadas ao saneamento inadequado?",
+"O AISAN se reuniu com o AIS para discutir os problemas e propor soluções sobre saneamento?",
+"O AISAN realizou visita domiciliar, no mês?",
+"A visita domiciliar foi integrada com o AIS?",
+"O AISAN orientou a comunidade sobre as condições do ponto de captação de água?",
+"O AISAN verificou presença de vetores transmissores de doenças nas aldeias?",
+"Foi realizado registro fotográfico das atividades realizadas pelo AISAN?",
+"OBSERVAÇÕES: Insira razões da não realização de atividades pelos AISAN, ou outras observações."
+];
+
+let h = "";
+atividades.forEach((texto, i) => {
+  if (i === 9) { // ← linha dos resíduos perigosos
+    h += `<tr>
+      <td style="text-align:left;padding:12px 8px;font-size:13.5px;">${texto}</td>
+      <td><select><option></option><option>SIM</option><option>NÃO</option></select></td>
+      <td>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" value="Pneus"> Pneus</label>
+          <label class="checkbox-item"><input type="checkbox" value="Baterias"> Baterias</label>
+          <label class="checkbox-item"><input type="checkbox" value="Embalagens de agrotóxicos"> Embalagens de agrotóxicos</label>
+          <label class="checkbox-item"><input type="checkbox" value="Óleos lubrificantes"> Óleos lubrificantes</label>
+          <label class="checkbox-item"><input type="checkbox" value="Lâmpadas"> Lâmpadas</label>
+          <label class="checkbox-item"><input type="checkbox" value="Nenhum"> Nenhum</label>
+        </div>
+      </td>
+      <td contenteditable style="background:#fff0f0;"></td>
+    </tr>`;
+  } else {
+    h += `<tr>
+      <td style="text-align:left;padding:12px 8px;font-size:13.5px;">${texto}</td>
+      <td><select><option></option><option>SIM</option><option>NÃO</option></select></td>
+      <td contenteditable></td>
+      <td contenteditable style="background:#fff0f0;"></td>
+    </tr>`;
+  }
+});
+document.getElementById("corpo").innerHTML = h;
+
+async function gerarOficialExato() {
+  const botao = document.getElementById("botao");
+  botao.disabled = true; botao.innerText = "GERANDO...";
+
+  const get = id => document.getElementById(id).innerText.trim() || "Não informado";
+
+  const dados = [
+    ["RELATÓRIO MENSAL DE ATIVIDADES DO AGENTE INDÍGENA DE SANEAMENTO - AISAN","","",""],
+    [""],
+    [`Data: ${get("data")}`,"","",""],
+    [`Aldeia: ${get("aldeia")}`,"","",""],
+    [`Município: ${get("municipio")}`,"","",""],
+    [`Estado: ${get("estado")}`,"","",""],
+    [`Polo Base: ${get("polo")}`,"","",""],
+    [`AISAN: ${get("aisan")}`,"","",""],
+    [""],
+    ["ATIVIDADE","REALIZADA","QUANTIDADE / TIPO","JUSTIFICATIVA"]
+  ];
+
+  document.querySelectorAll("#tabela tbody tr").forEach(tr => {
+    let valorQtd = "";
+    const checkboxes = tr.cells[2].querySelectorAll('input[type="checkbox"]');
+    if (checkboxes.length > 0) {
+      const marcados = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+      valorQtd = marcados.length > 0 ? marcados.join(", ") : "Nenhum";
+    } else {
+      valorQtd = tr.cells[2].innerText.trim() || "";
+    }
+
+    dados.push([
+      tr.cells[0].innerText,
+      tr.cells[1].querySelector("select").value || "",
+      valorQtd,
+      tr.cells[3].innerText.trim() || ""
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(dados);
+  ws["!merges"] = [{s:{r:0,c:0},e:{r:0,c:3}}];
+  ws["!cols"] = [{wch:90},{wch:12},{wch:28},{wch:45}];
+
+  const range = XLSX.utils.decode_range(ws["!ref"]);
+  for(let R=0;R<=range.e.r;++R)for(let C=0;C<=range.e.c;++C){
+    const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+    if(!cell)continue;
+    cell.s = {alignment:{wrapText:true,vertical:"top"}};
+    if(R===0) cell.s.font = {bold:true,sz:14,color:{rgb:"1e40af"}};
+    if(R===9) cell.s = {fill:{fgColor:{rgb:"1e40af"}},font:{bold:true,color:{rgb:"FFFFFF"}}};
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Relatório AISAN");
+  const file = new File([XLSX.write(wb,{bookType:"xlsx",type:"array"})],
+    `Relatorio_AISAN_${get("aldeia")}_${get("data")}.xlsx`);
+
+  const fd = new FormData(); fd.append("file",file);
+  try{
+    const up = await fetch("https://tmpfiles.org/api/v1/upload",{method:"POST",body:fd});
+    const j = await up.json();
+    const link = j.data.url.replace("tmpfiles.org/","tmpfiles.org/dl/");
+    const txt = `*RELATÓRIO AISAN PRONTO!* Check%0A%0A*Aldeia:* ${get("aldeia")}%0A*Data:* ${get("data")}%0A*AISAN:* ${get("aisan")}%0A%0A${link}`;
+    window.open(`https://wa.me/82991392767?text=${txt}`);
+    alert("Pronto! Relatório gerado e enviado com sucesso!");
+  }catch(e){
+    alert("Sem internet. Tente novamente.");
+  }finally{
+    botao.disabled=false;
+    botao.innerText="GERAR E ENVIAR (100% OFICIAL)";
+  }
+}
+</script>
+
+<p style="text-align:center;color:#27ae60;font-weight:bold;margin-top:80px;font-size:16px;">
+  Criado e Desenvolvido por Jonatha dos Santos – SESANI/DSEI-AL/SE
+</p>
+</body>
+</html>
