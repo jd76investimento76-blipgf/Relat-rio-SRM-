@@ -152,7 +152,7 @@ const atividades = [
 
 let h = "";
 atividades.forEach((texto, i) => {
-  if (i === 9) { // ← linha dos resíduos perigosos
+  if (i === 9) {
     h += `<tr>
       <td style="text-align:left;padding:12px 8px;font-size:13.5px;">${texto}</td>
       <td><select><option></option><option>SIM</option><option>NÃO</option></select></td>
@@ -181,10 +181,16 @@ document.getElementById("corpo").innerHTML = h;
 
 async function gerarOficialExato() {
   const botao = document.getElementById("botao");
-  botao.disabled = true; botao.innerText = "GERANDO...";
+  botao.disabled = true; 
+  botao.innerText = "GERANDO...";
 
   const get = id => document.getElementById(id).innerText.trim() || "Não informado";
 
+  // ABRE O WHATSAPP IMEDIATAMENTE (ação direta → iPhone não bloqueia)
+  const txtInicial = "*RELATÓRIO AISAN GERANDO...*%0A%0A*Aldeia:* ${get("aldeia")}%0A*Data:* ${get("data")}%0A*AISAN:* ${get("aisan")}%0A%0AArquivo chegando em segundos! ⏳";
+  window.open(`https://wa.me/82991392767?text=${txtInicial}`);
+
+  // Agora gera o Excel e faz upload
   const dados = [
     ["RELATÓRIO MENSAL DE ATIVIDADES DO AGENTE INDÍGENA DE SANEAMENTO - AISAN","","",""],
     [""],
@@ -241,11 +247,14 @@ async function gerarOficialExato() {
     const up = await fetch("https://tmpfiles.org/api/v1/upload",{method:"POST",body:fd});
     const j = await up.json();
     const link = j.data.url.replace("tmpfiles.org/","tmpfiles.org/dl/");
-    const txt = `*RELATÓRIO AISAN PRONTO!* Check%0A%0A*Aldeia:* ${get("aldeia")}%0A*Data:* ${get("data")}%0A*AISAN:* ${get("aisan")}%0A%0A${link}`;
-    window.open(`https://wa.me/82991392767?text=${txt}`);
+    const txtFinal = `*RELATÓRIO AISAN PRONTO!* ✅%0A%0A*Aldeia:* ${get("aldeia")}%0A*Data:* ${get("data")}%0A*AISAN:* ${get("aisan")}%0A%0A📎 ${link}`;
+    
+    // Abre segunda mensagem com o link real
+    window.open(`https://wa.me/82991392767?text=${txtFinal}`);
+    
     alert("Pronto! Relatório gerado e enviado com sucesso!");
   }catch(e){
-    alert("Sem internet. Tente novamente.");
+    alert("Erro no upload. Verifique a internet e tente novamente.");
   }finally{
     botao.disabled=false;
     botao.innerText="GERAR E ENVIAR (100% OFICIAL)";
@@ -258,3 +267,4 @@ async function gerarOficialExato() {
 </p>
 </body>
 </html>
+
